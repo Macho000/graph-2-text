@@ -11,7 +11,7 @@ BOS_WORD = '<s>'
 EOS_WORD = '</s>'
 
 
-class ONMTDatasetBase(torchtext.data.Dataset):
+class ONMTDatasetBase(torchtext.legacy.data.Dataset):
     """
     A dataset basically supports iteration over all the examples
     it contains. We currently have 3 datasets inheriting this base
@@ -32,7 +32,7 @@ class ONMTDatasetBase(torchtext.data.Dataset):
 
     def __reduce_ex__(self, proto):
         "This is a hack. Something is broken with torch pickle."
-        return super(ONMTDatasetBase, self).__reduce_ex__()
+        return super(ONMTDatasetBase, self).__reduce_ex__(proto)
 
     def load_fields(self, vocab_dict):
         """ Load fields from vocab.pt, and set the `fields` attribute.
@@ -51,14 +51,14 @@ class ONMTDatasetBase(torchtext.data.Dataset):
         """
         Args:
             tokens: A list of tokens, where each token consists of a word,
-                optionally followed by u"￨"-delimited features.
+                optionally followed by u"ï¿¨"-delimited features.
         Returns:
             A sequence of words, a sequence of features, and num of features.
         """
         if not tokens:
             return [], [], -1
 
-        split_tokens = [token.split(u"￨") for token in tokens]
+        split_tokens = [token.split(u"ï¿¨") for token in tokens]
         split_tokens = [token for token in split_tokens if token[0]]
         token_size = len(split_tokens[0])
 
@@ -107,7 +107,7 @@ class ONMTDatasetBase(torchtext.data.Dataset):
         Returns:
             the created `Example` object.
         """
-        ex = torchtext.data.Example()
+        ex = torchtext.legacy.data.Example()
         for (name, field), val in zip(fields, data):
             if field is not None:
                 setattr(ex, name, field.preprocess(val))

@@ -23,19 +23,27 @@ class Beam(object):
                  stepwise_penalty=False):
 
         self.size = size
-        self.tt = torch.cuda if cuda else torch
+        # self.tt = torch.cuda if cuda else torch
+        self.tt = 'cuda:0' if cuda else 'cpu'
 
         # The score for each translation on the beam.
-        self.scores = self.tt.FloatTensor(size).zero_()
+        # self.scores = self.tt.FloatTensor(size).zero_()
+        # self.scores = self.tt.tensor(size,dtype=torch.float).zero_()
+        self.scores = torch.tensor(size,dtype=torch.float,device=self.tt).zero_()
         self.all_scores = []
 
         # The backpointers at each time-step.
         self.prev_ks = []
 
         # The outputs at each time-step.
-        self.next_ys = [self.tt.LongTensor(size)
-                        .fill_(pad)]
-        self.next_ys[0][0] = bos
+        # self.next_ys = [self.tt.LongTensor(size)
+        #                 .fill_(pad)]
+        # self.next_ys = [self.tt.tensor((1,size),dtype=torch.long)
+        #                 .fill_(pad)]
+        # self.next_ys = [self.tt.tensor([]).new_full((5,),pad,dtype=torch.long)]
+        self.next_ys = [torch.tensor([]).new_full((5,),bos,dtype=torch.long, device=self.tt)]
+        # self.next_ys[0][0] = bos
+        # self.next_ys = bos
 
         # Has EOS topped the beam yet.
         self._eos = eos
@@ -105,10 +113,11 @@ class Beam(object):
 
         # best_scores_id is flattened beam x word array, so calculate which
         # word and beam each score came from
-        prev_k = best_scores_id / num_words
+        prev_k = (best_scores_id / num_words).type(torch.int64)
         self.prev_ks.append(prev_k)
-        self.next_ys.append((best_scores_id - prev_k * num_words))
-        self.attn.append(attn_out.index_select(0, prev_k))
+        # self.next_ys.append((best_scores_id - prev_k * num_words))
+        self.next_ys.append(best_scores_id % num_words)
+        self.attn.append(attn_out)
         self.global_scorer.update_global_state(self)
 
         for i in range(self.next_ys[-1].size(0)):
@@ -146,9 +155,12 @@ class Beam(object):
         """
         hyp, attn = [], []
         for j in range(len(self.prev_ks[:timestep]) - 1, -1, -1):
-            hyp.append(self.next_ys[j+1][k])
-            attn.append(self.attn[j][k])
-            k = self.prev_ks[j][k]
+            # print("type(self.next_ys[j+1][k])",str(type(self.next_ys[j+1][k])))
+            # print("self.next_ys[j+1][k].dtype",str(self.next_ys[j+1][k].dtype))
+            # print("self.next_ys[j+1][k].dtype",str(self.next_ys[j+1][k].type(torch.long).dtype))
+            hyp.append(self.next_ys[j+1][int(k)])
+            attn.append(self.attn[j][int(k)])
+            k = self.prev_ks[j][int(k)]
         return hyp[::-1], torch.stack(attn[::-1])
 
 
@@ -207,7 +219,7 @@ class GNMTGlobalScorer(object):
             self.cov_total += torch.min(beam.attn[-1],
                                         beam.global_state['coverage']).sum(1)
             beam.global_state["coverage"] = beam.global_state["coverage"] \
-                .index_select(0, beam.prev_ks[-1]).add(beam.attn[-1])
+                .index_select(0, (beam.prev_ks[-1]/len(beam.prev_ks)).type(torch.int64)).add(beam.attn[-1])
 
             prev_penalty = self.cov_penalty(beam,
                                             beam.global_state["coverage"],

@@ -290,8 +290,10 @@ def make_base_model(model_opt, fields, gpu, checkpoint=None):
 
     # Make the whole model leverage GPU if indicated to do so.
     if gpu:
-        model.cuda()
+        model.to("cuda:0" if torch.cuda.is_available() else "cpu")
+        # model.cuda()
     else:
-        model.cpu()
+        model.to("cpu")
+        # model.cpu()
 
     return model

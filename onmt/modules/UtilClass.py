@@ -34,7 +34,12 @@ class Elementwise(nn.ModuleList):
     def forward(self, input):
         inputs = [feat.squeeze(2) for feat in input.split(1, dim=2)]
         assert len(self) == len(inputs)
-        outputs = [f(x) for f, x in zip(self, inputs)]
+        # outputs = [f(x) for f, x in zip(self, inputs)]
+        outputs = []
+        for i, (f, x) in enumerate(zip(self, inputs)):
+            # print(i,str(f),str(x.type(torch.long)))
+            outputs.append(f(x.type(torch.long)))
+
         if self.merge == 'first':
             return outputs[0]
         elif self.merge == 'concat' or self.merge == 'mlp':

@@ -82,7 +82,7 @@ class Translator(object):
                                     min_length=self.min_length,
                                     stepwise_penalty=self.stepwise_penalty)
                 for __ in range(batch_size)]
-
+        
         # Help functions for working with beams and batches
         def var(a): return Variable(a, volatile=True)
 
@@ -124,6 +124,10 @@ class Translator(object):
         else:
             enc_states, memory_bank = self.model.encoder(src, src_lengths)
 
+        # print("memory_bank:",str(memory_bank))
+        # print("memory_bank.data:",str(memory_bank.data))
+        # print("size memory_bank:",str(memory_bank.size()))
+        # print("size memory_bank.data:",str(memory_bank.size()))
 
         dec_states = self.model.decoder.init_decoder_state(
                                         src, memory_bank, enc_states)
@@ -147,8 +151,15 @@ class Translator(object):
 
             # Construct batch x beam_size nxt words.
             # Get all the pending current beam words and arrange for forward.
+            # print("beam:",beam)
+            # print("len beam:", str(len(beam)))
             inp = var(torch.stack([b.get_current_state() for b in beam])
                       .t().contiguous().view(1, -1))
+            # inp = rvar(inp)
+            # print("size inp:",str(inp.size()))
+            # inp = inp.repeat(1,beam_size)
+            # print("size inp:",str(inp.size()))
+
 
             # Turn any copied words to UNKs
             # 0 is unk
@@ -161,6 +172,10 @@ class Translator(object):
             inp = inp.unsqueeze(2)
 
             # Run one step.
+            # print("inp:",str(inp))
+            # print("size inp:",str(inp.size()))
+            # print("memorybank;",str(memory_bank))
+            # print("size memorybank:",str(memory_bank.size()))
             dec_out, dec_states, attn = self.model.decoder(
                 inp, memory_bank, dec_states, memory_lengths=memory_lengths)
             dec_out = dec_out.squeeze(0)
@@ -267,5 +282,5 @@ class Translator(object):
             tgt = tgt.unsqueeze(1)
             scores = out.data.gather(1, tgt)
             scores.masked_fill_(tgt.eq(tgt_pad), 0)
-            gold_scores += scores
+            gold_scores += scores.reshape([1,-1]).squeeze()
         return gold_scores

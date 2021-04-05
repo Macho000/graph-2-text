@@ -211,26 +211,34 @@ class GCNDataset(ONMTDatasetBase):
         """
         fields = {}
 
-        fields["src"] = torchtext.data.Field(
+        fields["src"] = torchtext.legacy.data.Field(
             use_vocab=True,
             pad_token=PAD_WORD,
             include_lengths=True)
 
         for j in range(n_src_features):
             fields["src_feat_"+str(j)] = \
-                torchtext.data.Field(pad_token=PAD_WORD)
+                torchtext.legacy.data.Field(pad_token=PAD_WORD)
 
-        fields["tgt"] = torchtext.data.Field(
+        fields["tgt"] = torchtext.legacy.data.Field(
             use_vocab=True,
             init_token=BOS_WORD, eos_token=EOS_WORD,
             pad_token=PAD_WORD)
 
         for j in range(n_tgt_features):
             fields["tgt_feat_"+str(j)] = \
-                torchtext.data.Field(init_token=BOS_WORD, eos_token=EOS_WORD,
+                torchtext.legacy.data.Field(init_token=BOS_WORD, eos_token=EOS_WORD,
                                      pad_token=PAD_WORD)
 
-        def make_src(data, vocab, is_train):
+        # def make_src(data, vocab, is_train):
+        #     src_size = max([t.size(0) for t in data])
+        #     src_vocab_size = max([t.max() for t in data]) + 1
+        #     alignment = torch.zeros(src_size, len(data), src_vocab_size)
+        #     for i, sent in enumerate(data):
+        #         for j, t in enumerate(sent):
+        #             alignment[j, i, t] = 1
+        #     return alignment
+        def make_src(data, vocab):
             src_size = max([t.size(0) for t in data])
             src_vocab_size = max([t.max() for t in data]) + 1
             alignment = torch.zeros(src_size, len(data), src_vocab_size)
@@ -239,38 +247,67 @@ class GCNDataset(ONMTDatasetBase):
                     alignment[j, i, t] = 1
             return alignment
 
-        fields["src_map"] = torchtext.data.Field(
-            use_vocab=False, tensor_type=torch.FloatTensor,
+        # fields["src_map"] = torchtext.legacy.data.Field(
+        #     use_vocab=False, tensor_type=torch.FloatTensor,
+        #     postprocessing=make_src, sequential=False)
+        fields["src_map"] = torchtext.legacy.data.Field(
+            use_vocab=False, dtype=torch.float,
             postprocessing=make_src, sequential=False)
 
-        def make_tgt(data, vocab, is_train):
+        # def make_tgt(data, vocab, is_train):
+        #     tgt_size = max([t.size(0) for t in data])
+        #     alignment = torch.zeros(tgt_size, len(data)).long()
+        #     for i, sent in enumerate(data):
+        #         alignment[:sent.size(0), i] = sent
+        #     return alignment
+        def make_tgt(data, vocab):
             tgt_size = max([t.size(0) for t in data])
             alignment = torch.zeros(tgt_size, len(data)).long()
             for i, sent in enumerate(data):
                 alignment[:sent.size(0), i] = sent
             return alignment
 
-        fields["alignment"] = torchtext.data.Field(
-            use_vocab=False, tensor_type=torch.LongTensor,
+        # fields["alignment"] = torchtext.data.Field(
+        #     use_vocab=False, tensor_type=torch.LongTensor,
+        #     postprocessing=make_tgt, sequential=False)
+        fields["alignment"] = torchtext.legacy.data.Field(
+            use_vocab=False, dtype=torch.long,
             postprocessing=make_tgt, sequential=False)
 
-        fields["indices"] = torchtext.data.Field(
-            use_vocab=False, tensor_type=torch.LongTensor,
+        # fields["indices"] = torchtext.data.Field(
+        #     use_vocab=False, tensor_type=torch.LongTensor,
+        #     sequential=False)
+        fields["indices"] = torchtext.legacy.data.Field(
+            use_vocab=False, dtype=torch.long,
             sequential=False)
 
-        fields["label"] = torchtext.data.Field(
-            use_vocab=True, tensor_type=torch.LongTensor,
-            sequential=True)
-        fields["node1"] = torchtext.data.Field(
-            use_vocab=True, tensor_type=torch.LongTensor,
-            sequential=True)
-        fields["node2"] = torchtext.data.Field(
-            use_vocab=True, tensor_type=torch.LongTensor,
-            sequential=True)
-        fields["morph"] = torchtext.data.Field(
-            use_vocab=True, tensor_type=torch.LongTensor,
+        # fields["label"] = torchtext.data.Field(
+        #     use_vocab=True, tensor_type=torch.LongTensor,
+        #     sequential=True)
+        fields["label"] = torchtext.legacy.data.Field(
+            use_vocab=True, dtype=torch.long,
             sequential=True)
 
+        # fields["node1"] = torchtext.data.Field(
+        #     use_vocab=True, tensor_type=torch.LongTensor,
+        #     sequential=True)
+        fields["node1"] = torchtext.legacy.data.Field(
+            use_vocab=True, dtype=torch.long,
+            sequential=True)
+
+        # fields["node2"] = torchtext.data.Field(
+        #     use_vocab=True, tensor_type=torch.LongTensor,
+        #     sequential=True)
+        fields["node2"] = torchtext.legacy.data.Field(
+            use_vocab=True, dtype=torch.long,
+            sequential=True)
+
+        # fields["morph"] = torchtext.data.Field(
+        #     use_vocab=True, tensor_type=torch.LongTensor,
+        #     sequential=True)
+        fields["morph"] = torchtext.legacy.data.Field(
+            use_vocab=True, dtype=torch.long,
+            sequential=True)
         return fields
 
     @staticmethod

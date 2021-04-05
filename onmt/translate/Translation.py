@@ -32,7 +32,7 @@ class TranslationBuilder(object):
         tokens = []
         for tok in pred:
             if tok < len(vocab):
-                tokens.append(vocab.itos[tok])
+                tokens.append(vocab.itos[tok.type(torch.int64)])
             else:
                 tokens.append(src_vocab.itos[tok - len(vocab)])
             if tokens[-1] == onmt.io.EOS_WORD:

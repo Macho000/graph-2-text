@@ -665,6 +665,8 @@ class InputFeedRNNDecoder(RNNDecoderBase):
         # input at every time step.
         for i, emb_t in enumerate(emb.split(1)):
             emb_t = emb_t.squeeze(0)
+            # print("emb_t_size:",str(emb_t.size()))
+            # print("input_feed:",str(input_feed.size()))
             decoder_input = torch.cat([emb_t, input_feed], 1)
 
             rnn_output, hidden = self.rnn(decoder_input, hidden)
@@ -841,12 +843,16 @@ class DecoderState(object):
     def detach(self):
         for h in self._all:
             if h is not None:
-                h.detach_()
+                h.detach()
 
     def beam_update(self, idx, positions, beam_size):
         for e in self._all:
+            # print("e",str(e))
+            # print("type e",str(type(e)))
             sizes = e.size()
+            # print("size",str(sizes))
             br = sizes[1]
+            # print("br",str(br))
             if len(sizes) == 3:
                 sent_states = e.view(sizes[0], beam_size, br // beam_size,
                                      sizes[2])[:, :, idx]
@@ -856,8 +862,12 @@ class DecoderState(object):
                                      sizes[2],
                                      sizes[3])[:, :, idx]
 
-            sent_states.data.copy_(
-                sent_states.data.index_select(1, positions))
+            # print("sent_states",str(sent_states))
+            # print("size sent_states",str(sent_states.size()))
+            # sent_states.data.copy_(
+            #     sent_states.index_select(1,positions))
+                # sent_states.data.index_select(1, positions.type(torch.int64)))
+                # sent_states.data)
 
 
 class RNNDecoderState(DecoderState):
